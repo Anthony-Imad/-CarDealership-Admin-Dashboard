@@ -1,33 +1,62 @@
+import EntityForm from './components/EntityForm';
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-
 function App() {
-  const [count, setCount] = useState(0)
+
+  const [entityData, setEntityData] = useState([]);
+  const [activeEntity, setActiveEntity] = useState('cars');
+
+
+  /* normal state usage 
+  const [carInfo, setCarInfo] = useState({
+    make: '',
+    model: '',
+    year: '',
+    licensePlate: '',
+    isAvailable: '',
+  })
+  const [customerInfo, setCustomerInfo] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    licenseNumber: '',
+    isActive: ''
+  })
+  */
+
+  const entityConfig = {
+    cars: {
+      fields: [
+        {name: 'make', type: 'text', label: ''},
+        {name: 'model', type: 'text', label: ''},
+        {name: 'year', type: 'number', label: ''},
+        {name: 'licensePlate', type: 'number', label: ''},
+        {name: 'isAvailable', type: 'boolean', label: ''},
+      ],
+      displayFields: ['make', 'model', 'year', 'licensePlate', 'isAvailable']
+    },
+
+    customers: {
+      fields: [
+        {name: 'name', type: 'text', label: ''},
+        {name: 'email', type: 'email', label: ''},
+        {name: 'phone', type: 'number', label: ''},
+        {name: 'licenseNumber', type: 'text', label: ''},
+        {name: 'isActive', type: 'boolean', label: ''}
+      ],
+      displayFields: ['name', 'email', 'phone', 'licenseNumber', 'isActive']
+    }
+
+
+
+  }
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+    <EntityForm
+      entityData={entityData}
+      setEntityData={setEntityData}
+      fields={entityConfig[activeEntity].fields}
+    />
     </>
   )
 }

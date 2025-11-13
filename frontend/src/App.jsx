@@ -1,5 +1,6 @@
 import EntityForm from './components/EntityForm';
-import { useState } from 'react'
+import Sidebar from './components/Sidebar';
+import { act, useState } from 'react'
 function App() {
 
   const [entityData, setEntityData] = useState([]);
@@ -43,22 +44,27 @@ function App() {
       ],
       displayFields: ['name', 'email', 'phone', 'licenseNumber', 'isActive']
     }
-
-
-
   }
 
-  sidebarItems = [
-    {id: 'car, label: car},
-    {id: 'customer', label: customer},
-    {id: rental, label: rental},
-    {id: }
+
+  const SidebarItems = [
+    {id: 'cars', label: 'cars'},
+    {id: 'customers', label: 'customers'},
+    {id: 'rentals', label: 'rentals'},
+    {id: 'appoint', label: 'appoint'}
   ]
 
   return (
     <>
-    <div> 
-    {/*input fields*/} 
+    <div>
+    <Sidebar
+    items={SidebarItems}
+    activeItem={activeEntity}
+    onItemClick={setActiveEntity}
+    />
+    </div>
+
+    <div>  {/*input fields*/}
     <EntityForm
       entityData={entityData}
       setEntityData={setEntityData}
@@ -68,7 +74,6 @@ function App() {
     </div>
 
     <div>
-    
     </div>
     </>
   )

@@ -4,8 +4,6 @@ function App() {
 
   const [entityData, setEntityData] = useState([]);
   const [activeEntity, setActiveEntity] = useState('cars');
-
-
   /* normal state usage 
   const [carInfo, setCarInfo] = useState({
     make: '',
@@ -23,25 +21,25 @@ function App() {
   })
   */
 
-  const entityConfig = {
+  const entityConfig = { /*entity details/fields (car,customer)*/  
     cars: {
       fields: [
-        {name: 'make', type: 'text', label: ''},
-        {name: 'model', type: 'text', label: ''},
-        {name: 'year', type: 'number', label: ''},
-        {name: 'licensePlate', type: 'number', label: ''},
-        {name: 'isAvailable', type: 'boolean', label: ''},
+        {name: 'make', type: 'text', label: 'make'},
+        {name: 'model', type: 'text', label: 'model'},
+        {name: 'year', type: 'number', label: 'year'},
+        {name: 'licensePlate', type: 'number', label: 'licensePlate'},
+        {name: 'isAvailable', type: 'boolean', label: 'isAvailable'},
       ],
       displayFields: ['make', 'model', 'year', 'licensePlate', 'isAvailable']
     },
 
     customers: {
       fields: [
-        {name: 'name', type: 'text', label: ''},
-        {name: 'email', type: 'email', label: ''},
-        {name: 'phone', type: 'number', label: ''},
-        {name: 'licenseNumber', type: 'text', label: ''},
-        {name: 'isActive', type: 'boolean', label: ''}
+        {name: 'name', type: 'text', label: 'name'},
+        {name: 'email', type: 'email', label: 'email'},
+        {name: 'phone', type: 'number', label: 'phone'},
+        {name: 'licenseNumber', type: 'text', label: 'licenseNumber'},
+        {name: 'isActive', type: 'boolean', label: 'isActive'}
       ],
       displayFields: ['name', 'email', 'phone', 'licenseNumber', 'isActive']
     }
@@ -50,13 +48,28 @@ function App() {
 
   }
 
+  sidebarItems = [
+    {id: 'car, label: car},
+    {id: 'customer', label: customer},
+    {id: rental, label: rental},
+    {id: }
+  ]
+
   return (
     <>
+    <div> 
+    {/*input fields*/} 
     <EntityForm
       entityData={entityData}
       setEntityData={setEntityData}
       fields={entityConfig[activeEntity].fields}
     />
+    <button>submit</button>
+    </div>
+
+    <div>
+    
+    </div>
     </>
   )
 }

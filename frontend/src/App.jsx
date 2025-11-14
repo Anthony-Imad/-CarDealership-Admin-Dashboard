@@ -1,9 +1,10 @@
+import './App.css';
 import EntityForm from './components/EntityForm';
 import Sidebar from './components/Sidebar';
 import { act, useState } from 'react'
 function App() {
 
-  const [entityData, setEntityData] = useState([]);
+  const [entityData, setEntityData] = useState({});
   const [activeEntity, setActiveEntity] = useState('cars');
   /* normal state usage 
   const [carInfo, setCarInfo] = useState({
@@ -30,6 +31,7 @@ function App() {
         {name: 'year', type: 'number', label: 'year'},
         {name: 'licensePlate', type: 'number', label: 'licensePlate'},
         {name: 'isAvailable', type: 'boolean', label: 'isAvailable'},
+        {name: 'image', type: 'file', label: 'Car Image'}
       ],
       displayFields: ['make', 'model', 'year', 'licensePlate', 'isAvailable']
     },
@@ -40,23 +42,33 @@ function App() {
         {name: 'email', type: 'email', label: 'email'},
         {name: 'phone', type: 'number', label: 'phone'},
         {name: 'licenseNumber', type: 'text', label: 'licenseNumber'},
-        {name: 'isActive', type: 'boolean', label: 'isActive'}
+        {name: 'isActive', type: 'boolean', label: 'isActive'},
+        {name: 'image', type: 'file', label: 'Profile Picture'}
       ],
       displayFields: ['name', 'email', 'phone', 'licenseNumber', 'isActive']
     }
   }
 
 
-  const SidebarItems = [
+  const SidebarItems = [ /*it help .map display all the sidebar item */ 
     {id: 'cars', label: 'cars'},
     {id: 'customers', label: 'customers'},
     {id: 'rentals', label: 'rentals'},
-    {id: 'appoint', label: 'appoint'}
   ]
 
   return (
-    <>
-    <div>
+    <div className="app-container">
+    <div className="logo-header">
+    <div className="logo-content">
+    <div className="brand-logo">AD</div>
+    <div className="brand-text">
+      <div className="brand-title">AutoDealer</div>
+      <div className="brand-subtitle">Admin Dashboard</div>
+    </div>
+  </div>
+</div>
+    
+    <div> {/*display items on the sidebar*/} 
     <Sidebar
     items={SidebarItems}
     activeItem={activeEntity}
@@ -64,18 +76,28 @@ function App() {
     />
     </div>
 
-    <div>  {/*input fields*/}
+    <div className="main-content">
+      <div className="content-header">
+        <h1 className="content-title">
+          {activeEntity.charAt(0).toUpperCase() + activeEntity.slice(1)} Management
+          </h1>
+           <p className="content-description">
+            Manage your {activeEntity} data and information
+          </p>
+      </div>
+
+    <div className="form-container">  {/*input fields*/} 
     <EntityForm
       entityData={entityData}
       setEntityData={setEntityData}
-      fields={entityConfig[activeEntity].fields}
+      fields={entityConfig[activeEntity]?.fields || []}
     />
-    <button>submit</button>
-    </div>
-
-    <div>
-    </div>
-    </>
+     <div className="submit-section">
+    <button className="submit-button">submit</button>
+        </div>
+        </div>
+      </div>
+   </div>
   )
 }
 

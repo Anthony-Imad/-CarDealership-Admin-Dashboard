@@ -1,5 +1,4 @@
-
-export default function Sidebar({items, onItemClick, activeItem}) {
+export default function leftSidebar({items, onItemClick, activeItem}) {
 return (
     <div className="sidebar">
      <nav className="sidebar-nav">

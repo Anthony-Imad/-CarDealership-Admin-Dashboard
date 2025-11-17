@@ -1,6 +1,6 @@
 import './App.css';
 import EntityForm from './components/EntityForm';
-import Sidebar from './components/Sidebar';
+import leftSidebar from './components/leftSidebar';
 import { act, useState } from 'react'
 function App() {
 
@@ -50,10 +50,16 @@ function App() {
   }
 
 
-  const SidebarItems = [ /*it help .map display all the sidebar item */ 
+  const leftSidebarItems = [ /*it help .map display all the sidebar item */ 
+    {id: 'registerCars', label: 'Register Car'},
+    {id: 'registerCustomers', label: 'Register Customers'},
+    {id: 'registerRentals', label: 'Register Rentals'},
+  ]
+
+  const rightSidebarItems = [
     {id: 'cars', label: 'cars'},
-    {id: 'customers', label: 'customers'},
-    {id: 'rentals', label: 'rentals'},
+    {id: 'customers', label:'customers'},
+    {id:'rentals', label:'rentals'}
   ]
 
   return (
@@ -68,16 +74,25 @@ function App() {
   </div>
 </div>
     
-    <div> {/*display items on the sidebar*/} 
-    <Sidebar
-    items={SidebarItems}
+    <div> {/*display items on the left sidebar (create car, customer, rentals)*/} 
+    <leftSidebar
+    items={leftSidebarItems}
     activeItem={activeEntity}
     onItemClick={setActiveEntity}
     />
     </div>
 
+    <div>
+    <rightSidebar 
+    itemss={rightSidebarItems}
+    activeItem={activeEntity}
+    onItemClick={setActiveEntity}
+    />
+    </div>
+    
+
     <div className="main-content">
-      <div className="content-header">
+      <div className="content-header"> {/*just the header*/}
         <h1 className="content-title">
           {activeEntity.charAt(0).toUpperCase() + activeEntity.slice(1)} Management
           </h1>

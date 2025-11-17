@@ -4,31 +4,13 @@ export default function EntityForm({entityData, setEntityData, fields}) {
         if (file) {
             setEntityData(prev => ({
                 ...prev,
-                [field.name]: file
+                [fields.name]: file
             }));
         }
     };
     
     return (    
-        
-        /*
-        <div className="form-grid">
-        {fields.map(field => (
-            <input 
-            key={field.name}
-            type={field.type}
-            placeholder={field.label}
-            value={entityData[field.name] || ''}
-            onChange={(e) => setEntityData(prev => ({
-                ...prev,
-                [field.name]: e.target.value
-            }))}
-            />
-        ))}
-        </div>
-        */
-
-          <div className="form-grid">
+    <div className="form-grid">
       {fields.map(field => (
         <div key={field.name} className="form-group">
           <label className="form-label">

@@ -60,6 +60,6 @@ const rentalSchema = new mongoose.Schema({
 
 export const Car = mongoose.model('Car', carSchema);
 export const Customer = mongoose.model('Customer', customerSchema);
-export const Rental = moongoose.model('Rental', rentalSchema);
+export const Rental = mongoose.model('Rental', rentalSchema);
 
 

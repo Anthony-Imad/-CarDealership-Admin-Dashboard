@@ -3,22 +3,47 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import multer from 'multer';
-import { Car, Customer, Rental } from './models.js';
+import connectDB, { Car, Customer, Rental } from './models.js';
 
+// Initialize Express app
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
+
+// Connect to MongoDB Atlas
+connectDB();
 
 // Middleware
-app.use(cors()); // Enable Cross-Origin Resource Sharing
-app.use(express.json()); // Parse JSON request bodies
+app.use(cors({
+  origin: 'http://localhost:5173', // Vite default port
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Configure multer for file uploads
-const storage = multer.memoryStorage(); // Store files in memory as Buffer
+const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB file size limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
   }
+});
+
+// === HEALTH CHECK ===
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 // === CAR ROUTES ===
@@ -26,38 +51,53 @@ const upload = multer({
 // GET all cars
 app.get('/api/cars', async (req, res) => {
   try {
-    const cars = await Car.find();
+    const cars = await Car.find().sort({ createdAt: -1 });
     res.json(cars);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching cars:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
-// GET single car by ID
+// GET car by ID
 app.get('/api/cars/:id', async (req, res) => {
   try {
     const car = await Car.findById(req.params.id);
-    if (!car) return res.status(404).json({ message: 'Car not found' });
+    if (!car) {
+      return res.status(404).json({ message: 'Car not found' });
+    }
     res.json(car);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching car:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
-// CREATE new car with image upload
+// CREATE new car
 app.post('/api/cars', upload.single('image'), async (req, res) => {
   try {
     const { make, model, year, licensePlate, isAvailable } = req.body;
     
+    // Validate required fields
+    if (!make || !model || !year || !licensePlate) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Check if license plate already exists
+    const existingCar = await Car.findOne({ licensePlate });
+    if (existingCar) {
+      return res.status(400).json({ message: 'Car with this license plate already exists' });
+    }
+
     const carData = {
       make,
       model,
       year: parseInt(year),
       licensePlate,
-      isAvailable: isAvailable === 'true'
+      isAvailable: isAvailable === 'true' || isAvailable === true
     };
 
-    // If image was uploaded, add image data
+    // Add image if uploaded
     if (req.file) {
       carData.image = {
         data: req.file.buffer,
@@ -68,9 +108,14 @@ app.post('/api/cars', upload.single('image'), async (req, res) => {
 
     const car = new Car(carData);
     await car.save();
-    res.status(201).json(car);
+    
+    res.status(201).json({
+      message: 'Car created successfully',
+      car: car
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Error creating car:', error);
+    res.status(400).json({ message: 'Error creating car', error: error.message });
   }
 });
 
@@ -79,6 +124,16 @@ app.put('/api/cars/:id', upload.single('image'), async (req, res) => {
   try {
     const updates = { ...req.body };
     
+    // Handle boolean conversion
+    if (updates.isAvailable !== undefined) {
+      updates.isAvailable = updates.isAvailable === 'true' || updates.isAvailable === true;
+    }
+
+    // Handle year conversion
+    if (updates.year) {
+      updates.year = parseInt(updates.year);
+    }
+
     // Handle image update
     if (req.file) {
       updates.image = {
@@ -88,11 +143,23 @@ app.put('/api/cars/:id', upload.single('image'), async (req, res) => {
       };
     }
 
-    const car = await Car.findByIdAndUpdate(req.params.id, updates, { new: true });
-    if (!car) return res.status(404).json({ message: 'Car not found' });
-    res.json(car);
+    const car = await Car.findByIdAndUpdate(
+      req.params.id, 
+      updates, 
+      { new: true, runValidators: true }
+    );
+    
+    if (!car) {
+      return res.status(404).json({ message: 'Car not found' });
+    }
+
+    res.json({
+      message: 'Car updated successfully',
+      car: car
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Error updating car:', error);
+    res.status(400).json({ message: 'Error updating car', error: error.message });
   }
 });
 
@@ -100,10 +167,13 @@ app.put('/api/cars/:id', upload.single('image'), async (req, res) => {
 app.delete('/api/cars/:id', async (req, res) => {
   try {
     const car = await Car.findByIdAndDelete(req.params.id);
-    if (!car) return res.status(404).json({ message: 'Car not found' });
+    if (!car) {
+      return res.status(404).json({ message: 'Car not found' });
+    }
     res.json({ message: 'Car deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error deleting car:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -112,10 +182,11 @@ app.delete('/api/cars/:id', async (req, res) => {
 // GET all customers
 app.get('/api/customers', async (req, res) => {
   try {
-    const customers = await Customer.find();
+    const customers = await Customer.find().sort({ createdAt: -1 });
     res.json(customers);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching customers:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -124,12 +195,23 @@ app.post('/api/customers', upload.single('image'), async (req, res) => {
   try {
     const { name, email, phone, licenseNumber, isActive } = req.body;
     
+    // Validate required fields
+    if (!name || !email || !phone || !licenseNumber) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Check if email already exists
+    const existingCustomer = await Customer.findOne({ email });
+    if (existingCustomer) {
+      return res.status(400).json({ message: 'Customer with this email already exists' });
+    }
+
     const customerData = {
       name,
       email,
       phone,
       licenseNumber,
-      isActive: isActive === 'true'
+      isActive: isActive === 'true' || isActive === true
     };
 
     if (req.file) {
@@ -142,9 +224,14 @@ app.post('/api/customers', upload.single('image'), async (req, res) => {
 
     const customer = new Customer(customerData);
     await customer.save();
-    res.status(201).json(customer);
+    
+    res.status(201).json({
+      message: 'Customer created successfully',
+      customer: customer
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Error creating customer:', error);
+    res.status(400).json({ message: 'Error creating customer', error: error.message });
   }
 });
 
@@ -152,7 +239,12 @@ app.post('/api/customers', upload.single('image'), async (req, res) => {
 app.put('/api/customers/:id', upload.single('image'), async (req, res) => {
   try {
     const updates = { ...req.body };
-    
+
+    // Handle boolean conversion
+    if (updates.isActive !== undefined) {
+      updates.isActive = updates.isActive === 'true' || updates.isActive === true;
+    }
+
     if (req.file) {
       updates.image = {
         data: req.file.buffer,
@@ -161,11 +253,23 @@ app.put('/api/customers/:id', upload.single('image'), async (req, res) => {
       };
     }
 
-    const customer = await Customer.findByIdAndUpdate(req.params.id, updates, { new: true });
-    if (!customer) return res.status(404).json({ message: 'Customer not found' });
-    res.json(customer);
+    const customer = await Customer.findByIdAndUpdate(
+      req.params.id, 
+      updates, 
+      { new: true, runValidators: true }
+    );
+    
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+
+    res.json({
+      message: 'Customer updated successfully',
+      customer: customer
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Error updating customer:', error);
+    res.status(400).json({ message: 'Error updating customer', error: error.message });
   }
 });
 
@@ -173,10 +277,13 @@ app.put('/api/customers/:id', upload.single('image'), async (req, res) => {
 app.delete('/api/customers/:id', async (req, res) => {
   try {
     const customer = await Customer.findByIdAndDelete(req.params.id);
-    if (!customer) return res.status(404).json({ message: 'Customer not found' });
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
     res.json({ message: 'Customer deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error deleting customer:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -187,10 +294,12 @@ app.get('/api/rentals', async (req, res) => {
   try {
     const rentals = await Rental.find()
       .populate('carId')
-      .populate('customerId');
+      .populate('customerId')
+      .sort({ createdAt: -1 });
     res.json(rentals);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching rentals:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -199,6 +308,29 @@ app.post('/api/rentals', async (req, res) => {
   try {
     const { carId, customerId, startDate, endDate, totalCost } = req.body;
     
+    // Validate required fields
+    if (!carId || !customerId || !startDate || !endDate || !totalCost) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Check if car is available
+    const car = await Car.findById(carId);
+    if (!car) {
+      return res.status(404).json({ message: 'Car not found' });
+    }
+    if (!car.isAvailable || car.isRented) {
+      return res.status(400).json({ message: 'Car is not available for rental' });
+    }
+
+    // Check if customer exists and is active
+    const customer = await Customer.findById(customerId);
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+    if (!customer.isActive) {
+      return res.status(400).json({ message: 'Customer is not active' });
+    }
+
     const rental = new Rental({
       carId,
       customerId,
@@ -218,9 +350,13 @@ app.post('/api/rentals', async (req, res) => {
       .populate('carId')
       .populate('customerId');
 
-    res.status(201).json(populatedRental);
+    res.status(201).json({
+      message: 'Rental created successfully',
+      rental: populatedRental
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Error creating rental:', error);
+    res.status(400).json({ message: 'Error creating rental', error: error.message });
   }
 });
 
@@ -228,7 +364,9 @@ app.post('/api/rentals', async (req, res) => {
 app.delete('/api/rentals/:id', async (req, res) => {
   try {
     const rental = await Rental.findById(req.params.id);
-    if (!rental) return res.status(404).json({ message: 'Rental not found' });
+    if (!rental) {
+      return res.status(404).json({ message: 'Rental not found' });
+    }
 
     // Update car and customer status
     await Car.findByIdAndUpdate(rental.carId, { isRented: false, isAvailable: true });
@@ -237,11 +375,35 @@ app.delete('/api/rentals/:id', async (req, res) => {
     await Rental.findByIdAndDelete(req.params.id);
     res.json({ message: 'Rental deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error deleting rental:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
+});
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+  console.error('Unhandled error:', error);
+  res.status(500).json({ message: 'Internal server error', error: error.message });
+});
+
+// Multer error handling
+app.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'File too large. Maximum size is 5MB.' });
+    }
+  }
+  next(error);
+});
+
+// 404 handler - FIXED: Use proper syntax
+app.use((req, res) => {
+  res.status(404).json({ message: 'API endpoint not found' });
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`📊 MongoDB: ${mongoose.connection.readyState === 1 ? 'Connected to Atlas' : 'Connecting...'}`);
 });

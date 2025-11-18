@@ -10,7 +10,7 @@ export default function EntityForm({
         if (file) {
             setEntityData(prev => ({
                 ...prev,
-                [fields.name]: file
+                [fieldName]: file
             }));
         }
     };

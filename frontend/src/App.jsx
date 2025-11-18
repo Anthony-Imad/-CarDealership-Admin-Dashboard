@@ -1,3 +1,4 @@
+// App.jsx - Complete management system
 import './App.css';
 import EntityForm from './components/EntityForm';
 import RentalForm from './components/RentalForm';
@@ -5,8 +6,6 @@ import LeftSidebar from './components/leftSidebar';
 import RightSidebar from './components/rightSidebar';
 import { useState, useEffect } from 'react';
 
-// API base URL
-const API_BASE = 'http://localhost:5000/api';
 
 function App() {
   const [entityData, setEntityData] = useState({});
@@ -20,18 +19,16 @@ function App() {
   const [editingEntity, setEditingEntity] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Load data from backend API
+  // Load data from MongoDB
   useEffect(() => {
     loadCars();
     loadCustomers();
     loadRentals();
   }, []);
 
-  // API functions
   const loadCars = async () => {
     try {
-      const response = await fetch(`${API_BASE}/cars`);
-      const carsData = await response.json();
+      const carsData = await Car.find();
       setCars(carsData);
     } catch (error) {
       console.error('Error loading cars:', error);
@@ -40,8 +37,7 @@ function App() {
 
   const loadCustomers = async () => {
     try {
-      const response = await fetch(`${API_BASE}/customers`);
-      const customersData = await response.json();
+      const customersData = await Customer.find();
       setCustomers(customersData);
     } catch (error) {
       console.error('Error loading customers:', error);
@@ -50,15 +46,16 @@ function App() {
 
   const loadRentals = async () => {
     try {
-      const response = await fetch(`${API_BASE}/rentals`);
-      const rentalsData = await response.json();
+      const rentalsData = await Rental.find()
+        .populate('carId')
+        .populate('customerId');
       setRentals(rentalsData);
     } catch (error) {
       console.error('Error loading rentals:', error);
     }
   };
 
-  // Entity configuration (same as before)
+  // Entity configuration
   const entityConfig = {
     cars: {
       fields: [
@@ -100,20 +97,18 @@ function App() {
     
     try {
       if (activeEntity === 'rentals') {
-        // Handle rental creation via API
-        const response = await fetch(`${API_BASE}/rentals`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ...rentalData,
-            carId: selectedCar._id,
-            customerId: selectedCustomer._id
-          })
+        // Handle rental creation
+        const rental = new Rental({
+          ...rentalData,
+          carId: selectedCar._id,
+          customerId: selectedCustomer._id
         });
-
-        if (!response.ok) throw new Error('Failed to create rental');
+        
+        await rental.save();
+        
+        // Update car rental status
+        await Car.findByIdAndUpdate(selectedCar._id, { isRented: true });
+        await Customer.findByIdAndUpdate(selectedCustomer._id, { hasRental: true });
         
         setRentalData({});
         setSelectedCar(null);
@@ -130,30 +125,26 @@ function App() {
         Object.keys(entityData).forEach(key => {
           if (key === 'image' && entityData[key] instanceof File) {
             formData.append('image', entityData[key]);
-          } else if (key !== 'imageUrl' && key !== '_id') {
-            // Don't send imageUrl (frontend only) or _id for new entities
+          } else {
             formData.append(key, entityData[key]);
           }
         });
 
-        let response;
         if (isEditMode && editingEntity) {
           // Update existing entity
-          response = await fetch(`${API_BASE}/${activeEntity}/${editingEntity._id}`, {
+          await fetch(`/api/${activeEntity}/${editingEntity._id}`, {
             method: 'PUT',
-            body: formData // FormData for file upload
+            body: formData
           });
           setIsEditMode(false);
           setEditingEntity(null);
         } else {
           // Create new entity
-          response = await fetch(`${API_BASE}/${activeEntity}`, {
+          await fetch(`/api/${activeEntity}`, {
             method: 'POST',
             body: formData
           });
         }
-
-        if (!response.ok) throw new Error('Failed to save entity');
 
         setEntityData({});
         loadCars();
@@ -176,10 +167,11 @@ function App() {
     // Convert image data for display
     const entityWithImage = { ...entity };
     if (entity.image && entity.image.data) {
-      // Convert Buffer to base64 for image display
-      const binaryData = new Uint8Array(entity.image.data);
-      const base64Image = btoa(binaryData.reduce((data, byte) => data + String.fromCharCode(byte), ''));
-      entityWithImage.imageUrl = `data:${entity.image.contentType};base64,${base64Image}`;
+      entityWithImage.imageUrl = `data:${entity.image.contentType};base64,${btoa(
+        new Uint8Array(entity.image.data).reduce(
+          (data, byte) => data + String.fromCharCode(byte), ''
+        )
+      )}`;
     }
     
     setEntityData(entityWithImage);
@@ -189,19 +181,12 @@ function App() {
   const handleDelete = async (id, entityType) => {
     if (window.confirm('Are you sure you want to delete this record?')) {
       try {
-        const response = await fetch(`${API_BASE}/${entityType}/${id}`, { 
-          method: 'DELETE' 
-        });
+        await fetch(`/api/${entityType}/${id}`, { method: 'DELETE' });
         
-        if (!response.ok) throw new Error('Failed to delete');
-        
-        // Update local state
         if (entityType === 'cars') {
           setCars(cars.filter(car => car._id !== id));
         } else if (entityType === 'customers') {
           setCustomers(customers.filter(customer => customer._id !== id));
-        } else if (entityType === 'rentals') {
-          setRentals(rentals.filter(rental => rental._id !== id));
         }
         
         alert('Record deleted successfully!');
@@ -233,7 +218,6 @@ function App() {
     }
   };
 
-  // Rest of your component JSX remains the same...
   return (
     <div className="app-container">
       {/* Header */}

@@ -52,7 +52,7 @@ const handleSelectForRental = (entity, entityType) => {
                 {entities.map(entity => (
                     <div
                     key={entity._id}
-                    className={`entity-card ${entity.isRented || entity.hasRetal? 'has-rental' : ''}`}
+                    className={`entity-card ${entity.isRented || entity.hasRental? 'has-rental' : ''}`}
                     onClick={() => handleSelectForRental(entity, activeItem)}
                     >
                     {(entity.isRented || entity.hasRental) && (
@@ -63,7 +63,7 @@ const handleSelectForRental = (entity, entityType) => {
                     {entity.image && entity.image.data && (
                         <img
                             src={`data:${entity.image.contentType};base64,${btoa(
-                                new Uint8Array(CustomElementRegistry.image.data).reduce(
+                                new Uint8Array(entity.image.data).reduce(
                                     (data,byte) => data + String.fromCharCode(byte), ''
                                 )
                             )}`}

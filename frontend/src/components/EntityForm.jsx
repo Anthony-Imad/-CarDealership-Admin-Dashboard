@@ -1,4 +1,10 @@
-export default function EntityForm({entityData, setEntityData, fields}) {
+export default function EntityForm({
+    entityData,
+    setEntityData, 
+    fields,
+    isEdit = false,
+    existingImage = null
+}) {
     
     const handleFileChange = (fieldName, file) => {
         if (file) {
@@ -10,7 +16,7 @@ export default function EntityForm({entityData, setEntityData, fields}) {
     };
     
     return (    
-    <div className="form-grid">
+   <div className="form-grid">
       {fields.map(field => (
         <div key={field.name} className="form-group">
           <label className="form-label">
@@ -21,7 +27,10 @@ export default function EntityForm({entityData, setEntityData, fields}) {
             <div className="file-input-wrapper">
               <label className="file-input-label">
                 <div className="upload-icon">📷</div>
-                <div className="upload-text">Upload {field.label}</div>
+                <div className="upload-text">
+                  {isEdit && existingImage ? 'Change ' : 'Upload '} 
+                  {field.label}
+                </div>
                 <div className="upload-subtext">Click or drag and drop</div>
                 <input
                   type="file"
@@ -30,10 +39,15 @@ export default function EntityForm({entityData, setEntityData, fields}) {
                   accept="image/*"
                 />
               </label>
-              {entityData[field.name] && (
+              
+              {/* Show existing image in edit mode or new image preview */}
+              {(entityData[field.name] || (isEdit && existingImage)) && (
                 <div className="image-preview-container">
                   <img 
-                    src={URL.createObjectURL(entityData[field.name])} 
+                    src={entityData[field.name] ? 
+                      URL.createObjectURL(entityData[field.name]) : 
+                      existingImage
+                    } 
                     alt="Preview" 
                     className="image-preview"
                   />
@@ -51,7 +65,9 @@ export default function EntityForm({entityData, setEntityData, fields}) {
                   [field.name]: e.target.checked
                 }))}
               />
-              <span className="checkbox-label">Available</span>
+              <span className="checkbox-label">
+                {field.name === 'isAvailable' ? 'Available' : 'Active'}
+              </span>
             </div>
           ) : (
             <input 
@@ -68,5 +84,4 @@ export default function EntityForm({entityData, setEntityData, fields}) {
         </div>
       ))}
     </div>
-    )
-}
+    )}

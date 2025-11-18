@@ -38,12 +38,12 @@ const customerSchema = new mongoose.Schema({
 //rental schema to link cars and customers
 const rentalSchema = new mongoose.Schema({
     carId: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId, // references car document by id
         ref: 'Car',
         required: true
     },
     customerId: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId, // same here but for customer by id
         ref: 'Customer',
         required: true
     },
@@ -52,7 +52,7 @@ const rentalSchema = new mongoose.Schema({
     totalCost: {type: Number, required: true},
     status: {
         type: String,
-        enum: ['active', 'completed', cancelled],
+        enum: ['active', 'completed', 'cancelled'],
         default: 'active'
     },
     createdAt: {type: Date, default: Date.now}

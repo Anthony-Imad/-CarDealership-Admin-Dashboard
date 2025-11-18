@@ -45,6 +45,68 @@ const handleSelectForRental = (entity, entityType) => {
             </button>
             ))}
         </nav>
+
+        <div className="entity-list">
+            <h4>Existing {activeItem}</h4>
+            <div className="entity-cards">
+                {entities.map(entity => (
+                    <div
+                    key={entity._id}
+                    className={`entity-card ${entity.isRented || entity.hasRetal? 'has-rental' : ''}`}
+                    onClick={() => handleSelectForRental(entity, activeItem)}
+                    >
+                    {(entity.isRented || entity.hasRental) && (
+                        <div className="rental-indicator" title="Currently in rental">
+                             ●
+                            </div>
+                    )}
+                    {entity.image && entity.image.data && (
+                        <img
+                            src={`data:${entity.image.contentType};base64,${btoa(
+                                new Uint8Array(CustomElementRegistry.image.data).reduce(
+                                    (data,byte) => data + String.fromCharCode(byte), ''
+                                )
+                            )}`}
+                            alt={entity.make || entity.name}
+                            className="entity-image"
+                            />
+                    )}
+                     <div className="entity-info">
+                <h5>{entity.make || entity.name}</h5>
+                <p>{entity.model || entity.email}</p>
+                <span className={`status ${entity.isAvailable !== undefined ? 
+                  (entity.isAvailable ? 'available' : 'unavailable') : 
+                  (entity.isActive ? 'active' : 'inactive')}`}>
+                  {entity.isAvailable !== undefined ? 
+                    (entity.isAvailable ? 'Available' : 'Rented') : 
+                    (entity.isActive ? 'Active' : 'Inactive')}
+                </span>
+              </div>
+              
+              <div className="entity-actions">
+                <button 
+                  className="edit-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(entity, activeItem);
+                  }}
+                >
+                  Edit
+                </button>
+                <button 
+                  className="delete-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(entity._id, activeItem);
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+              </div>
+                ))}
+            </div>
+    </div>
         </div>
     )
 }
